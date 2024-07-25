@@ -1,0 +1,47 @@
+services:
+  lms_app:
+    container_name: lms_app
+    build:
+      context: ./
+      dockerfile: ./build_files/app/Dockerfile
+    ports:
+      - 0.0.0.0:4443:4443
+    restart: always
+    environment:
+      DEV_MODE: true
+      DB_USER: lsm_user
+      DB_PASS: password
+      DB_HOST: database
+      DB_PORT: 33306
+      DB_NAME: lsm_main_database
+      APP_DB_HOST: 0.0.0.0
+    depends_on:
+      database:
+        condition: service_healthy
+        restart: true
+
+  database:
+    container_name: database
+    build:
+      context: ./
+      dockerfile: ./build_files/db/Dockerfile
+    restart: always
+    ports:
+      - 0.0.0.0:33306:3306
+    environment:
+      # MARIADB_ROOT_HOST: "0.0.0.0"
+      PYTHONUNBUFFERED: 0
+      MARIADB_ROOT_PASSWORD: lsm_admin_123
+      MARIADB_DATABASE: lsm_main_database
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "healthcheck.sh",
+          "--connect",
+          "--innodb_initialized"
+        ]
+      interval: 5s
+      timeout: 10s
+      retries: 30
+      start_period: 0s
